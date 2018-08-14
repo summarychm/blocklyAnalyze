@@ -1,0 +1,8 @@
+node_modules/
+public/lib/
+public/apps/
+config/npm-debug.log
+manifest/
+build/
+.github/
+.vscode/
