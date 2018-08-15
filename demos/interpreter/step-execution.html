@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>Blockly Demo: Step Execution with JS Interpreter</title>
@@ -13,37 +14,38 @@
       background-color: #fff;
       font-family: sans-serif;
     }
+
     h1 {
       font-weight: normal;
       font-size: 140%;
     }
   </style>
 </head>
+
 <body>
   <h1><a href="https://developers.google.com/blockly/">Blockly</a> &gt;
     <a href="../index.html">Demos</a> &gt; Step Execution with JS Interpreter</h1>
 
   <p>This is a demo of executing code step-by-step with a sandboxed JavaScript interpreter.</p>
 
-  <p>The generator's <code>Blockly.JavaScript.STATEMENT_PREFIX</code> is assigned <code>'highlightBlock(%1);\n'</code>,
-  where <code>%1</code> is the block id. The call to <code>highlightBlock()</code> will highlight the identified block
-  and set the variable <code>highlightPause</code> to <code>true</code>.</p>
+  <p>The generator's <code>Blockly.JavaScript.STATEMENT_PREFIX</code> is assigned <code>'highlightBlock(%1);\n'</code>, where
+    <code>%1</code> is the block id. The call to <code>highlightBlock()</code> will highlight the identified block and set
+    the variable <code>highlightPause</code> to <code>true</code>.</p>
 
-  <p>"Parse JavaScript" will generate the code and load it into the interpreter. Then, each press of the
-  "Step JavaScript" button will run the interpreter one step until the <code>highlightPause</code> is true.
-  That is, until <code>highlightBlock()</code> has highlighted the block that will be executed on the next step.</p>
+  <p>"Parse JavaScript" will generate the code and load it into the interpreter. Then, each press of the "Step JavaScript"
+    button will run the interpreter one step until the <code>highlightPause</code> is true. That is, until <code>highlightBlock()</code>    has
+    highlighted the block that will be executed on the next step.</p>
 
-  <p>&rarr; <a href="https://developers.google.com/blockly/guides/configure-blockly/web/running-javascript#js_interpreter">More info on running code with JS Interpreter</a></p>
+  <p>&rarr; <a href="https://developers.google.com/blockly/guides/configure-blockly/web/running-javascript#js_interpreter">More
+      info on running code with JS Interpreter</a></p>
 
   <p>
     <button onclick="stepCode()" id="stepButton">Step JavaScript</button>
   </p>
 
   <div style="width: 100%">
-    <div id="blocklyDiv"
-        style="display: inline-block; height: 480px; width: 58%"></div>
-    <textarea id="output" disabled="disabled"
-        style="display: inline-block; height: 480px; width: 38%;">
+    <div id="blocklyDiv" style="display: inline-block; height: 480px; width: 58%"></div>
+    <textarea id="output" disabled="disabled" style="display: inline-block; height: 480px; width: 38%;">
     </textarea>
   </div>
 
@@ -139,76 +141,78 @@
   </xml>
 
   <script>
-    var demoWorkspace = Blockly.inject('blocklyDiv',
-        {media: '../../media/',
-         toolbox: document.getElementById('toolbox')});
-    Blockly.Xml.domToWorkspace(document.getElementById('startBlocks'),
-                               demoWorkspace);
+    var $ = function (id) {
+      return document.getElementById(id);
+    };
+    var demoWorkspace = Blockly.inject('blocklyDiv', {
+      media: '../../media/',
+      songs: false,
+      toolbox: $('toolbox')
+    });
+    // 载入用户代码
+    Blockly.Xml.domToWorkspace($('startBlocks'),demoWorkspace);
 
-    var outputArea = document.getElementById('output');
-    var stepButton = document.getElementById('stepButton');
+    var outputArea = $('output');//输出区域
+    var stepButton = $('stepButton');//单步执行按钮
     var myInterpreter = null;
-
-    function initApi(interpreter, scope) {
-      // Add an API function for the alert() block, generated for "text_print" blocks.
-      interpreter.setProperty(scope, 'alert',
-          interpreter.createNativeFunction(function(text) {
-        text = text ? text.toString() : '';
-        outputArea.value += '\n' + text;
-      }));
-
-      // Add an API function for the prompt() block.
-      var wrapper = function(text) {
-        text = text ? text.toString() : '';
-        return interpreter.createPrimitive(prompt(text));
-      };
-      interpreter.setProperty(scope, 'prompt',
-          interpreter.createNativeFunction(wrapper));
-
-      // Add an API function for highlighting blocks.
-      var wrapper = function(id) {
-        id = id ? id.toString() : '';
-        return interpreter.createPrimitive(highlightBlock(id));
-      };
-      interpreter.setProperty(scope, 'highlightBlock',
-          interpreter.createNativeFunction(wrapper));
-    }
-
     var highlightPause = false;
-    var latestCode = '';
+    var latestCode = '';//最终code
 
+    // 创建高亮函数,并在blockly中注册
+    Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
+    Blockly.JavaScript.addReservedWords('highlightBlock');
     function highlightBlock(id) {
       demoWorkspace.highlightBlock(id);
       highlightPause = true;
     }
 
+      function initApi(interpreter, scope) {
+      //为alert方法添加钩子,将其写入到outputArea上
+      interpreter.setProperty(scope, 'alert',
+        interpreter.createNativeFunction(function (text) {
+          text = text ? text.toString() : '';
+          outputArea.value += '\n' + text;
+        }));
+
+      // Add an API function for the prompt() block.
+      var wrapper = function (text) {
+        text = text ? text.toString() : '';
+        return interpreter.createPrimitive(prompt(text));
+      };
+      interpreter.setProperty(scope, 'prompt',
+        interpreter.createNativeFunction(wrapper));
+
+      // 注册高亮显示的api函数
+      var wrapper = function (id) {
+        id = id ? id.toString() : '';
+        return interpreter.createPrimitive(highlightBlock(id));
+      };
+      interpreter.setProperty(scope, 'highlightBlock',
+        interpreter.createNativeFunction(wrapper));
+    }
+    
+    // 重置页面UI
     function resetStepUi(clearOutput) {
       demoWorkspace.highlightBlock(null);
       highlightPause = false;
-
-      if (clearOutput) {
+      if (clearOutput)
         outputArea.value = 'Program output:\n=================';
-      }
     }
-
+    
     function generateCodeAndLoadIntoInterpreter() {
-      // Generate JavaScript code and parse it.
-      Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
-      Blockly.JavaScript.addReservedWords('highlightBlock');
+      // 生成新的code并执行
       latestCode = Blockly.JavaScript.workspaceToCode(demoWorkspace);
       resetStepUi(true);
     }
-
+    
+    // 单步运行block块
     function stepCode() {
       if (!myInterpreter) {
-        // First statement of this code.
-        // Clear the program output.
         resetStepUi(true);
+        //创建Interpreter解析器实例
         myInterpreter = new Interpreter(latestCode, initApi);
-
-        // And then show generated code in an alert.
-        // In a timeout to allow the outputArea.value to reset first.
-        setTimeout(function() {
+        //提示用户要运行的代码
+        setTimeout(function () {
           alert('Ready to execute the following code\n' +
             '===================================\n' + latestCode);
           highlightPause = true;
@@ -219,37 +223,36 @@
       highlightPause = false;
       do {
         try {
+          //获取当前步骤的代码
           var hasMoreCode = myInterpreter.step();
         } finally {
           if (!hasMoreCode) {
-            // Program complete, no more code to execute.
+            // 程序完成,收尾工作
             outputArea.value += '\n\n<< Program complete >>';
-
             myInterpreter = null;
             resetStepUi(false);
-
-            // Cool down, to discourage accidentally restarting the program.
+            // 限制执行间隔
             stepButton.disabled = 'disabled';
-            setTimeout(function() {
+            setTimeout(function () {
               stepButton.disabled = '';
             }, 2000);
-
             return;
           }
         }
-        // Keep executing until a highlight statement is reached,
-        // or the code completes or errors.
+        //递归运行,直到运行完毕或代码出错.
       } while (hasMoreCode && !highlightPause);
     }
 
-    // Load the interpreter now, and upon future changes.
+    // 加载解析器,并注册workspace的change事件
     generateCodeAndLoadIntoInterpreter();
-    demoWorkspace.addChangeListener(function(event) {
+    demoWorkspace.addChangeListener(function (event) {
+      console.log("event.type",event.type,event instanceof Blockly.Events.Ui);
       if (!(event instanceof Blockly.Events.Ui)) {
-        // Something changed. Parser needs to be reloaded.
+        //非Events.UI事件就重新加载解析器.
         generateCodeAndLoadIntoInterpreter();
       }
     });
   </script>
 </body>
+
 </html>

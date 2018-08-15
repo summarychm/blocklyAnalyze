@@ -66,12 +66,12 @@
 
     function mirrorEvent(primaryEvent) {
       if (primaryEvent.type == Blockly.Events.UI) {
-        return;  // Don't mirror UI events.
+        return;  //排除掉UI类型的事件
       }
-      // Convert event to JSON.  This could then be transmitted across the net.
+      // 将event转化为JSON,方便传输.
       var json = primaryEvent.toJson();
       console.log(json);
-      // Convert JSON back into an event, then execute it.
+      // 将json转化为event并执行
       var secondaryEvent = Blockly.Events.fromJson(json, secondaryWorkspace);
       secondaryEvent.run(true);
     }
